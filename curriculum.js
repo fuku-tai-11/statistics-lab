@@ -1,7 +1,7 @@
 /* Register additional course modules here; do not rename existing question IDs. */
 const courses = {
-  probability: {name:'確率論', english:'PROBABILITY', description:'確率のモデルから、収束と大数の法則へ。',lessons:probabilityLessons,questions:probabilityQuestions},
-  statistics: {name:'統計学', english:'STATISTICS', description:'データから未知の母数を推定する。',lessons:lessons,questions:questions}
+  probability: {name:'確率論', english:'確率論', description:'確率のモデルから、収束と大数の法則へ。',lessons:probabilityLessons,questions:probabilityQuestions},
+  statistics: {name:'統計学', english:'統計学', description:'データから未知の母数を推定する。',lessons:lessons,questions:questions}
 };
 const statisticsHelp = [
   ['確率は重み、期待値は重み付きの平均。分散は平均からの距離を2乗して平均したものです。','0が.7、1が.3の確率で出るなら、期待値は0×.7+1×.3=.3。2乗しても0と1なのでE[X²]=.3。分散は.3−.3²=.21。','「分散」と「標準偏差」を区別する。単位を元の量に戻したいときは平方根を取る。'],
@@ -16,13 +16,13 @@ const statisticsHelp = [
   ['理論上の平均や分散を、データで計算した平均や分散に合わせて母数を解く方法です。','U(a,b)でデータの平均5、nで割った分散3なら、中心は5、半幅は√(3×3)=3。したがって推定した区間は[2,8]。','母数が2つなら、通常は2本の積率の方程式が必要。'],
   ['推定値の左右に「標準誤差×分布の分位点」を付けて、推定の不確かさを表します。','正規・σ既知でX̄=10、σ=2、n=16。95%区間の半幅は1.96×2/4=.98。区間は[9.02,10.98]。nを4倍にすると半幅は半分になる。','95%は区間の作り方の長期的な被覆率。母数に95%の確率を割り当てる意味ではない。'],
   ['正規標本の分散はカイ二乗、2群の分散比はFを使う。母数について不等式を解くと分位点が分母に来ます。','n=11ならQ=10S²/σ²が自由度10のカイ二乗。a≤Q≤bをσ²について解くと10S²/b≤σ²≤10S²/a。上下の分位点を逆にしない。','このカイ二乗・Fの正確な分布は、正規母集団や2標本の独立性を前提とする。'],
-  ['成功割合はベルヌーイ変数の平均。標本数が増えると安定し、大標本では誤差を正規分布で近似できます。','100回中50回成功ならp̂=.5、推定標準誤差は√(.5×.5/100)=.05。95%Wald区間はおよそ.5±.098。400回なら標準誤差は.025。','小標本や0・1近傍でWald近似は不安定。大数の法則だけでは近似精度の保証にならない。']
+  ['成功割合はベルヌーイ変数の平均。標本数が増えると安定し、大標本では誤差を正規分布で近似できます。','100回中50回成功ならp̂=.5、推定標準誤差は√(.5×.5/100)=.05。95%ワルド区間はおよそ.5±.098。400回なら標準誤差は.025。','小標本や0・1近傍でワルド近似は不安定。大数の法則だけでは近似精度の保証にならない。']
 ];
 const bridges = [
   {id:'moments',title:'分布の変換 → 平均・分散の計算',probability:'transforms',statistics:1,why:'MGFを微分して積率を取り出す。特性関数はMGFが存在しない分布や極限定理にも使える。',example:'Ber(p) の M(t)=1−p+peᵗ から平均p、分散p(1−p)へ。',condition:'MGFの微分を使うには、0の開近傍で有限であることを確認。'},
-  {id:'consistency',title:'弱大数の法則 → 推定量の一致性',probability:'weak-law',statistics:8,why:'標本数が増えると推定値が真値へ確率収束する。この「長く続けると当たる」が一致性。',example:'Ber(p) の最尤推定量 p̂=X̄ は、弱大数の法則からpへ確率収束。',condition:'不偏性 E[Tₙ]=θ と一致性 Tₙ→θ in probability は別。分散や極限も確認。'},
-  {id:'mse',title:'L²収束 → MSEによる推定量の評価',probability:'convergence',statistics:5,why:'真値θに対する平均二乗誤差が0になるのがL²収束。Markovで一致性も導ける。',example:'E[(p̂−p)²]=p(1−p)/n→0。p̂はL²でも確率でもpに収束。',condition:'確率収束だけでは期待値やMSEの収束は保証されない。まれな大きな外れに注意。'},
-  {id:'slutsky',title:'中心極限定理＋Slutsky → 信頼区間',probability:'limit-tools',statistics:10,why:'誤差の分布を正規近似し、未知の標準偏差を一致推定値に置き換えて区間を作る。',example:'√n(X̄−μ)/Sₙ→N(0,1) から、大標本で X̄±1.96Sₙ/√n。',condition:'iid・有限の正の分散とSₙの一致性が一つの十分条件。有限標本での正確なt区間とは区別。'},
-  {id:'proportion',title:'ベルヌーイの平均 → 母比率の区間',probability:'weak-law',statistics:12,why:'成功回数ではなく成功割合を使うと、ばらつきは1/nで小さくなる。',example:'Var(Sₙ)=np(1−p)、Var(Sₙ/n)=p(1−p)/n。大標本では割合の正規近似を使う。',condition:'nが小さい・pが端に近い場合はWaldの近似が悪い。Chebyshevの上限は正規近似ではない。'},
+  {id:'consistency',title:'弱大数の法則 → 推定量の一致性',probability:'weak-law',statistics:8,why:'標本数が増えると推定値が真値へ確率収束する。この「長く続けると当たる」が一致性。',example:'Ber(p) の最尤推定量 p̂=X̄ は、弱大数の法則からpへ確率収束。',condition:'不偏性 E[Tₙ]=θ と一致性 Tₙ→θ （確率収束） は別。分散や極限も確認。'},
+  {id:'mse',title:'L²収束 → MSEによる推定量の評価',probability:'convergence',statistics:5,why:'真値θに対する平均二乗誤差が0になるのがL²収束。マルコフで一致性も導ける。',example:'E[(p̂−p)²]=p(1−p)/n→0。p̂はL²でも確率でもpに収束。',condition:'確率収束だけでは期待値やMSEの収束は保証されない。まれな大きな外れに注意。'},
+  {id:'slutsky',title:'中心極限定理＋スルツキー → 信頼区間',probability:'limit-tools',statistics:10,why:'誤差の分布を正規近似し、未知の標準偏差を一致推定値に置き換えて区間を作る。',example:'√n(X̄−μ)/Sₙ→N(0,1) から、大標本で X̄±1.96Sₙ/√n。',condition:'独立同分布・有限の正の分散とSₙの一致性が一つの十分条件。有限標本での正確なt区間とは区別。'},
+  {id:'proportion',title:'ベルヌーイの平均 → 母比率の区間',probability:'weak-law',statistics:12,why:'成功回数ではなく成功割合を使うと、ばらつきは1/nで小さくなる。',example:'Var(Sₙ)=np(1−p)、Var(Sₙ/n)=p(1−p)/n。大標本では割合の正規近似を使う。',condition:'nが小さい・pが端に近い場合はワルドの近似が悪い。チェビシェフの上限は正規近似ではない。'},
   {id:'almost-sure',title:'強大数の法則 → 1本のデータ列の安定',probability:'strong-law',statistics:3,why:'ほとんどすべての無限の標本列で平均が真値へ近づく、というより強い保証。',example:'独立同分布で有限分散ならX̄ₙ→μ a.s.。標本平均の長期的な安定を支える。',condition:'有限回のグラフは証明ではない。単調に近づくことも、有限nで誤差0になることも意味しない。'}
 ];

@@ -20,8 +20,8 @@ for(const d of ctx.ds){let defaults=Object.fromEntries(d.params.map(a=>[a[0],a[5
 const elements=new Map(),listeners={};const el=selector=>{if(!elements.has(selector))elements.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},classList:{toggle(){}},setAttribute(){}});return elements.get(selector)};
 const storage=new Map([['statistics-lab-v1','{"2":true}'],['statistics-lab-lessons-v1','{"completed":{"statistics:1:cdf":true},"positions":{"statistics:1":2}}']]);
 const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
-let appctx=vm.createContext({console,Stats:S,document:{querySelector:el,querySelectorAll:()=>[],addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn)},window:{scrollTo(){}},localStorage});
-const files=['data.js','probability.js','curriculum.js','lesson-guides.js','expanded-notes.js','interpretation.js','app.js','course-ui.js','chapter-reader.js'];
+let appctx=vm.createContext({console,katex:require('./vendor/katex/katex.min.js'),Stats:S,document:{querySelector:el,querySelectorAll:()=>[],addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn)},window:{scrollTo(){}},localStorage});
+const files=['data.js','probability.js','curriculum.js','lesson-guides.js','expanded-notes.js','interpretation.js','math-display.js','math-formulas.js','app.js','course-ui.js','chapter-reader.js'];
 vm.runInContext(files.map(f=>fs.readFileSync(f,'utf8')).join('\n'),appctx);
 vm.runInContext(`
  for(const d of distributions){state.dist=d.id;renderExplore();if(/NaN|Infinity/.test(document.querySelector('#chart').innerHTML))throw Error(d.id+' invalid SVG');if(!document.querySelector('#graph-reading').innerHTML.includes('何がわかる'))throw Error('missing reading');state.mode='cdf';renderExplore();state.mode='pdf';}
@@ -61,7 +61,19 @@ click({noteUnderstood:'expectation'});
 vm.runInContext("if(!lessonMemory.completed['statistics:1:expectation'])throw Error('mark note')",appctx);
 click({noteUnderstood:'expectation'});
 vm.runInContext("if(lessonMemory.completed['statistics:1:expectation'])throw Error('unmark note')",appctx);
-const reloaded=vm.createContext({console,Stats:S,document:{querySelector:el,querySelectorAll:()=>[],addEventListener(){}},window:{scrollTo(){}},localStorage});
+const reloaded=vm.createContext({console,katex:require('./vendor/katex/katex.min.js'),Stats:S,document:{querySelector:el,querySelectorAll:()=>[],addEventListener(){}},window:{scrollTo(){}},localStorage});
 vm.runInContext(files.map(f=>fs.readFileSync(f,'utf8')).join('\n')+";if(!lessonMemory.completed['statistics:1:cdf']||!solved[2])throw Error('progress restoration')",reloaded);
 for(const file of ['index.html','app.js','course-ui.js','chapter-reader.js'])assert.doesNotMatch(fs.readFileSync(file,'utf8'),/data-view="lab"|renderLab|experimentState|learning-math\.js/);
+vm.runInContext(`
+ if(MathDisplay.tex('2⁻ᵐ')!=='2^{-m}')throw Error('superscript formatting');
+ if(!MathDisplay.tex('Σₓ₌₁∞').includes('^{\\\\infty }'))throw Error('sum upper bound');
+ if(!MathDisplay.tex('A∩B').includes('\\\\cap '))throw Error('binary intersection');
+ for(const def of limitDefinitions){
+  const rendered=MathDisplay.render(def.equation);if(!rendered.includes('katex-mathml')||rendered.includes('katex-error'))throw Error('definition rendering');
+ }
+ if(!MathDisplay.rows(limitDefinitions[4].equation)[0].includes('\\\\bigcup'))throw Error('indexed union');
+ if(!MathDisplay.rows(distributions.find(d=>d.id==='exponential').pdf)[0].includes('e^{-\\\\lambda x}'))throw Error('exponential density exponent');
+ for(const course of Object.values(courses))for(const lesson of course.lessons)for(const section of lesson.sections)MathDisplay.render(section[2]);
+ if(MathDisplay.failures.length)throw Error(JSON.stringify(MathDisplay.failures));
+`,appctx);
 console.log('PASS: distribution identities and endpoints; both courses; all lessons, exercises and bridge targets; old progress; numeric grading; continuous expanded chapters; definition-first explanations; preserved understanding records.');
