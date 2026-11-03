@@ -18,10 +18,10 @@ assert.equal(ctx.ds.length,14);assert.equal(ctx.ls.length,13);assert.equal(ctx.q
 for(const d of ctx.ds){let defaults=Object.fromEntries(d.params.map(a=>[a[0],a[5]]));let cases=[defaults,...d.params.flatMap(a=>[a[2],a[3]].map(v=>({...defaults,[a[0]]:v})))];for(const p of cases){const[lo,hi]=S.bounds(d.id,p);let prev=0;for(let i=0;i<=200;i++){let x=lo+(hi-lo)*i/200,v=S.cdf(d.id,x,p);assert.ok(Number.isFinite(v)&&v>=-1e-10&&v<=1+1e-10,`${d.id} cdf range`);assert.ok(v>=prev-1e-10,`${d.id} monotonic`);prev=v}if(d.type==='discrete'){let sum=0;for(let k=0;k<2000;k++)sum+=S.density(d.id,k,p);near(sum,1,1e-8)}}}
 // A minimal DOM harness catches all render-time failures without browser dependencies.
 const elements=new Map(),listeners={};const el=selector=>{if(!elements.has(selector))elements.set(selector,{innerHTML:'',textContent:'',value:'',dataset:{},style:{},classList:{toggle(){}},setAttribute(){}});return elements.get(selector)};
-const storage=new Map([['statistics-lab-v1','{"2":true}']]);
+const storage=new Map([['statistics-lab-v1','{"2":true}'],['statistics-lab-lessons-v1','{"completed":{"statistics:1:cdf":true},"positions":{"statistics:1":2}}']]);
 const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
 let appctx=vm.createContext({console,Stats:S,document:{querySelector:el,querySelectorAll:()=>[],addEventListener:(type,fn)=>(listeners[type]??=[]).push(fn)},window:{scrollTo(){}},localStorage});
-const files=['data.js','probability.js','curriculum.js','lesson-guides.js','interpretation.js','app.js','course-ui.js','lesson-reader.js'];
+const files=['data.js','probability.js','curriculum.js','lesson-guides.js','expanded-notes.js','interpretation.js','app.js','course-ui.js','chapter-reader.js'];
 vm.runInContext(files.map(f=>fs.readFileSync(f,'utf8')).join('\n'),appctx);
 vm.runInContext(`
  for(const d of distributions){state.dist=d.id;renderExplore();if(/NaN|Infinity/.test(document.querySelector('#chart').innerHTML))throw Error(d.id+' invalid SVG');if(!document.querySelector('#graph-reading').innerHTML.includes('何がわかる'))throw Error('missing reading');state.mode='cdf';renderExplore();state.mode='pdf';}
@@ -30,12 +30,16 @@ vm.runInContext(`
    state.course=key;for(let i=0;i<course.lessons.length;i++){
      state.chapter=i;const k=lessonKey(key,i),g=guideFor(key,i);
      if(!lessonGuides[k]||!g.goal||g.terms.length<2)throw Error('missing authored guide');
-     if(new Set(g.steps.map(s=>s.id)).size!==g.steps.length)throw Error('duplicate step ID');
-     for(let j=0;j<g.steps.length;j++){
-       const s=g.steps[j];if(!s.explain||s.worked.length<3||!s.question||!s.answer||!s.equation)throw Error('incomplete teaching step');
-       lessonMemory.positions[k]=j;renderLessons();
-       if(!document.querySelector('#content').innerHTML.includes(escapeHTML(s.title)))throw Error('wrong active step');
+     const sections=readingSections(key,i);
+     if(!chapterExplanations[k]||chapterExplanations[k].details.length!==g.steps.length||chapterEquations[k].length!==g.steps.length)throw Error('missing expanded notes');
+     renderLessons();const html=document.querySelector('#content').innerHTML;
+     for(const section of sections){
+       if(!section.plain||!section.detail.length||!section.equation||!section.uses||!section.example.length)throw Error('incomplete concept explanation');
+       if(!html.includes(escapeHTML(section.title))||!html.includes(escapeHTML(section.uses)))throw Error('concept hidden from chapter');
+       const begin=html.indexOf('id="note-'+section.id+'"');
+       if(html.indexOf(escapeHTML(section.equation),begin)>html.indexOf(escapeHTML(section.plain),begin))throw Error('definition not before explanation');
      }
+     if(html.includes('data-lesson-step')||html.includes('reader-skip'))throw Error('step UI remains');
    }
    state.filter='all';state.kind='all';renderPractice();state.filter='1';state.kind='numeric';renderPractice();state.kind='proof';renderPractice();
  }
@@ -50,17 +54,14 @@ el('#answer-2').value='4';fire('submit',{target:{dataset:{answer:'2'}},preventDe
 el('#answer-2').value='0';fire('submit',{target:{dataset:{answer:'2'}},preventDefault(){}});assert.match(el('#feedback-2').textContent,/もう一度/);
 vm.runInContext("state.course='probability';renderPractice()",appctx);
 el('#answer-prob-geom-shift').value='4';fire('submit',{target:{dataset:{answer:'prob-geom-shift'}},preventDefault(){}});assert.match(el('#feedback-prob-geom-shift').textContent,/正解/);
-vm.runInContext("state.course='statistics';state.chapter=0;state.view='lessons';lessonMemory.positions['statistics:1']=0;renderLessons()",appctx);
+vm.runInContext("state.course='statistics';state.chapter=0;state.view='lessons';renderLessons()",appctx);
 const click=data=>fire('click',{target:{closest:()=>({dataset:data})}});
-click({lessonUnderstood:'expectation'});
-vm.runInContext("if(!lessonMemory.completed['statistics:1:expectation']||lessonMemory.positions['statistics:1']!==1)throw Error('step advancement')",appctx);
-click({lessonStep:'2'});
-vm.runInContext("if(lessonMemory.completed['statistics:1:variance'])throw Error('skip marked as learned')",appctx);
-click({lessonStep:'0'});
-vm.runInContext("if(lessonMemory.positions['statistics:1']!==0)throw Error('back navigation')",appctx);
-click({lessonUnderstood:'expectation'});click({lessonUnderstood:'variance'});click({lessonUnderstood:'cdf'});
-assert.match(el('#content').innerHTML,/この章の全ステップを確認/);
+vm.runInContext("if(!lessonMemory.completed['statistics:1:cdf'])throw Error('old understanding history lost')",appctx);
+click({noteUnderstood:'expectation'});
+vm.runInContext("if(!lessonMemory.completed['statistics:1:expectation'])throw Error('mark note')",appctx);
+click({noteUnderstood:'expectation'});
+vm.runInContext("if(lessonMemory.completed['statistics:1:expectation'])throw Error('unmark note')",appctx);
 const reloaded=vm.createContext({console,Stats:S,document:{querySelector:el,querySelectorAll:()=>[],addEventListener(){}},window:{scrollTo(){}},localStorage});
 vm.runInContext(files.map(f=>fs.readFileSync(f,'utf8')).join('\n')+";if(!lessonMemory.completed['statistics:1:cdf']||!solved[2])throw Error('progress restoration')",reloaded);
-for(const file of ['index.html','app.js','course-ui.js','lesson-reader.js'])assert.doesNotMatch(fs.readFileSync(file,'utf8'),/data-view="lab"|renderLab|experimentState|learning-math\.js/);
-console.log('PASS: distribution identities and endpoints; both courses; all lessons, exercises and bridge targets; old progress; numeric grading; guided lessons and review navigation.');
+for(const file of ['index.html','app.js','course-ui.js','chapter-reader.js'])assert.doesNotMatch(fs.readFileSync(file,'utf8'),/data-view="lab"|renderLab|experimentState|learning-math\.js/);
+console.log('PASS: distribution identities and endpoints; both courses; all lessons, exercises and bridge targets; old progress; numeric grading; continuous expanded chapters; definition-first explanations; preserved understanding records.');
