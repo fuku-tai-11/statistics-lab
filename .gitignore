@@ -1,0 +1,10 @@
+*.pdf
+pdf-check-*.png
+node_modules/
+.env
+.env.*
+*.log
+tmp/
+output/
+.DS_Store
+Thumbs.db
